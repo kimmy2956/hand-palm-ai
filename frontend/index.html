@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ทำนายลายมือ</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* CSS เหมือนตัวอย่างก่อนหน้า */
+  /* ... copy CSS จากตัวอย่างด้านบน ... */
+</style>
+</head>
+<body>
+<header>
+<h1>ทำนายลายมือ</h1>
+<p>วิเคราะห์เส้นชีวิต เส้นสมอง เส้นหัวใจ และเส้นวาสนา พร้อมคำแนะนำเชิงบวก</p>
+</header>
+
+<main>
+<section class="upload-section">
+<h2>อัปโหลดรูปฝ่ามือ</h2>
+<p class="notice-text">**หมายเหตุ:** โปรแกรมนี้ใช้เพื่อความบันเทิงเท่านั้น.</p>
+<input type="file" id="palmInput" accept="image/*">
+<div class="preview" id="preview"><p style="color:#aaa;">รอรูปภาพ...</p></div>
+<button class="analyze-btn">วิเคราะห์เส้นลายมือ</button>
+<p id="statusText" style="text-align:center;color:#ff6347;font-weight:bold;margin-top:10px;"></p>
+</section>
+
+<section class="result-section" id="resultSection">
+<div class="card" id="lifeCard"><h3>เส้นชีวิต</h3><p id="lifeLine"></p></div>
+<div class="card" id="headCard"><h3>เส้นสมอง</h3><p id="headLine"></p></div>
+<div class="card" id="heartCard"><h3>เส้นหัวใจ</h3><p id="heartLine"></p></div>
+<div class="card" id="fateCard"><h3>เส้นวาสนา</h3><p id="fateLine"></p></div>
+</section>
+</main>
+
+<footer>พัฒนาโดย ธันยรัศมิ์ ประภาจิรสกุล</footer>
+
+<script>
+const palmInput = document.getElementById("palmInput");
+const preview = document.getElementById("preview");
+const resultSection = document.getElementById("resultSection");
+const analyzeBtn = document.querySelector(".analyze-btn");
+const statusText = document.getElementById("statusText");
+
+let uploadedFile = null;
+
+palmInput.addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(file && file.type.startsWith("image/")){
+    uploadedFile = file;
+    const reader = new FileReader();
+    reader.onload = evt => preview.innerHTML = `<img src="${evt.target.result}" alt="Palm Image">`;
+    reader.readAsDataURL(file);
+    statusText.innerText = "";
+    resultSection.classList.remove("show");
+  } else {
+    alert("กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น");
+    e.target.value = "";
+    uploadedFile = null;
+    preview.innerHTML = `<p style="color:#aaa;">รอรูปภาพ...</p>`;
+  }
+});
+
+analyzeBtn.addEventListener("click", async function(){
+  if(!uploadedFile){ alert("กรุณาอัปโหลดรูปภาพก่อน"); return; }
+
+  analyzeBtn.disabled = true;
+  analyzeBtn.innerText = "กำลังวิเคราะห์...";
+  statusText.innerText = "กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...";
+
+  try{
+    const formData = new FormData();
+    formData.append("palm", uploadedFile);
+
+    const response = await fetch("https://YOUR_BACKEND_URL/analyze", {
+      method:"POST",
+      body: formData
+    });
+
+    const data = await response.json();
+    const text = data.result;
+
+    const life = text.match(/\*\*?เส้นชีวิต\*\*?(.*?)(?=\*\*?เส้นสมอง|\*\*?เส้นหัวใจ|\*\*?เส้นวาสนา|$)/s);
+    const head = text.match(/\*\*?เส้นสมอง\*\*?(.*?)(?=\*\*?เส้นหัวใจ|\*\*?เส้นวาสนา|$)/s);
+    const heart = text.match(/\*\*?เส้นหัวใจ\*\*?(.*?)(?=\*\*?เส้นวาสนา|$)/s);
+    const fate = text.match(/\*\*?เส้นวาสนา\*\*?(.*)/s);
+
+    document.getElementById("lifeLine").innerText = life ? life[1].trim() : "ไม่พบการวิเคราะห์";
+    document.getElementById("headLine").innerText = head ? head[1].trim() : "ไม่พบการวิเคราะห์";
+    document.getElementById("heartLine").innerText = heart ? heart[1].trim() : "ไม่พบการวิเคราะห์";
+    document.getElementById("fateLine").innerText = fate ? fate[1].trim() : "ไม่พบการวิเคราะห์";
+
+    statusText.innerText = "วิเคราะห์เสร็จสมบูรณ์";
+    resultSection.classList.add("show");
+
+  } catch(err){
+    console.error(err);
+    statusText.innerText = "เกิดข้อผิดพลาดในการวิเคราะห์";
+  } finally{
+    analyzeBtn.disabled = false;
+    analyzeBtn.innerText = "วิเคราะห์เส้นลายมือ";
+  }
+});
+</script>
+</body>
+</html>
